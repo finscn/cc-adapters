@@ -23,10 +23,15 @@
  THE SOFTWARE.
  ****************************************************************************/
 var fs = wx.getFileSystemManager ? wx.getFileSystemManager() : null;
+var outOfStorageRegExp = /the maximum size of the file storage/;
 
 var fsUtils = {
 
     fs,
+
+    isOutOfStorage (errMsg) {
+        return outOfStorageRegExp.test(errMsg);
+    },
 
     getUserDataPath () {
         return wx.env.USER_DATA_PATH;
@@ -98,7 +103,15 @@ var fsUtils = {
             srcPath: srcPath,
             destPath: destPath,
             success: function () {
-                onComplete && onComplete(null);
+                fsUtils.exists(destPath, (exist) => {
+                    if (exist) {
+                        onComplete && onComplete(null);
+                    }
+                    else {
+                        console.warn(`Copy file failed: path: ${srcPath} message: file does not exist`);
+                        onComplete && onComplete(new Error('file does not exist'));
+                    }
+                })
             },
             fail: function (res) {
                 console.warn(`Copy file failed: path: ${srcPath} message: ${res.errMsg}`);
