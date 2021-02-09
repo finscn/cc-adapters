@@ -23,10 +23,15 @@
  THE SOFTWARE.
  ****************************************************************************/
 var fs = tt.getFileSystemManager ? tt.getFileSystemManager() : null;
+var outOfStorageRegExp = /size.*limit.*exceeded/;
 
 var fsUtils = {
 
     fs,
+
+    isOutOfStorage (errMsg) {
+        return outOfStorageRegExp.test(errMsg);
+    },
 
     getUserDataPath () {
         return tt.env.USER_DATA_PATH;
@@ -229,7 +234,24 @@ var fsUtils = {
     },
 
     loadSubpackage (name, onProgress, onComplete) {
-        throw new Error('Not Implemented');
+        if (!tt.loadSubpackage) {
+            console.warn('tt.loadSubpackage not supported, fallback to loading bundle');
+            require(`./subpackages/${name}/game.js`);
+            onComplete && onComplete();
+            return;
+        }
+        var task = tt.loadSubpackage({
+            name: name,
+            success: function () {
+                onComplete && onComplete();
+            },
+            fail: function (res) {
+                console.warn(`Load Subpackage failed: path: ${name} message: ${res.errMsg}`);
+                onComplete && onComplete(new Error(`Failed to load subpackage ${name}: ${res.errMsg}`));
+            }
+        });
+        onProgress && task.onProgressUpdate(onProgress);
+        return task;
     },
 
     unzip (zipFilePath, targetPath, onComplete) {
