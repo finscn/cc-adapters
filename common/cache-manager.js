@@ -229,8 +229,9 @@ var cacheManager = {
                 this._deleteFileCB();
             }
             else {
-                deleteFile(path, this._deleteFileCB.bind(this));
+                deleteFileSync(path);
             }
+            this._deleteFileCB();
         }
     },
 
